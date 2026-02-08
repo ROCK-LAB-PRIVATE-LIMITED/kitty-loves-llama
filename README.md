@@ -28,21 +28,21 @@ llama.cpp Binaries: You must have the llama-server (or llama-serve) executable f
 ## 📦 Installation
 Clone the repository:
 
-code
+
 ```bash
 git clone https://github.com/ROCK-LAB-PRIVATE-LIMITED/kitty-loves-llama
 cd kitty-llama
 ```
 Install dependencies:
 
-code
+
 ```bash
 pip install PySide6
 ```
 ## ⚡ Usage
 Run the application:
 
-code
+
 ```bash
 python src/kitty-loves-llama.py
 ```
@@ -59,7 +59,7 @@ Start: Hit Start Server. If "Display preview" is checked, the chat interface wil
 ## 🛠️ Build for distribution
 
 Install build dependencies:
-code
+
 ```bash
 pip install nuitka==2.7.14
 ```
