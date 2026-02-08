@@ -62,6 +62,7 @@ Install build dependencies:
 
 ```bash
 pip install nuitka==2.7.14
+pip install imageio
 ```
 Build with nuitka:
 ```bash
