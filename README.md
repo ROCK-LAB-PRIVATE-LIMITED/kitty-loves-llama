@@ -56,6 +56,19 @@ Configure: Adjust your context size, GPU layers (set to 0 for CPU only), and por
 
 Start: Hit Start Server. If "Display preview" is checked, the chat interface will open automatically.
 
+## 🛠️ Build for distribution
+
+Install build dependencies:
+code
+```bash
+pip install nuitka==2.7.14
+```
+Build with nuitka:
+```bash
+cd src
+nuitka kitty-loves-llama.py
+```
+
 ## ⚙️ Configuration Fields
 Parameter	Description
 Server Binary	Path to the llama-server executable.
