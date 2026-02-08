@@ -1,5 +1,5 @@
 ![alt text](https://img.shields.io/badge/license-MIT-blue.svg) ![alt text](https://img.shields.io/badge/python-3.10%2B-green.svg) ![alt text](https://img.shields.io/badge/UI-PySide6-orange.svg)
-![kitty❤️llama Logo](assets/kittycon.png)
+
 # kitty❤️llama
 
 A lightweight, elegant Python GUI wrapper for llama-server (from the llama.cpp project). kitty❤️llama simplifies the process of launching and managing local LLM servers with a focus on ease of use, drag-and-drop functionality, and real-time monitoring.
