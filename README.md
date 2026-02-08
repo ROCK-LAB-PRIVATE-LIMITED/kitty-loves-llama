@@ -66,7 +66,7 @@ pip install imageio
 ```
 Build with nuitka:
 ```bash
-nuitka kitty-loves-llama.py
+nuitka src/kitty-loves-llama.py
 ```
 
 ## ⚙️ Configuration Fields
