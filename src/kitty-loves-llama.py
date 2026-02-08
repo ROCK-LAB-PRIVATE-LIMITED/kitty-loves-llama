@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
     QPlainTextEdit, QFileDialog, QGroupBox, QFormLayout, QCheckBox
 )
 from PySide6.QtCore import Qt, QProcess, Signal, QUrl, QTimer
+from PySide6.QtGui import QIcon
 
 try:
     from PySide6.QtWebEngineWidgets import QWebEngineView
@@ -362,6 +363,7 @@ class LlamaWrapperApp(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon("assets/kittycon.png")) 
     window = LlamaWrapperApp()
     window.show()
     sys.exit(app.exec())
