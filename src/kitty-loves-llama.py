@@ -16,7 +16,7 @@ try:
 except ImportError:
     HAS_WEBENGINE = False
 
-CONFIG_FILE = "llama_gui_config.json"
+CONFIG_FILE = "kitty_config.json"
 
 class DropArea(QLabel):
     fileDropped = Signal(str)
