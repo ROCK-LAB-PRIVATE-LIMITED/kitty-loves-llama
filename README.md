@@ -31,7 +31,7 @@ Clone the repository:
 
 ```bash
 git clone https://github.com/ROCK-LAB-PRIVATE-LIMITED/kitty-loves-llama
-cd kitty-llama
+cd kitty-loves-llama
 ```
 Install dependencies:
 
@@ -65,7 +65,6 @@ pip install nuitka==2.7.14
 ```
 Build with nuitka:
 ```bash
-cd src
 nuitka kitty-loves-llama.py
 ```
 

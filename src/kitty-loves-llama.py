@@ -363,7 +363,7 @@ class LlamaWrapperApp(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon("assets/kittycon.png")) 
+    app.setWindowIcon(QIcon(os.path.join(os.path.dirname(__file__), "..", "assets", "kittycon.png")))
     window = LlamaWrapperApp()
     window.show()
     sys.exit(app.exec())
