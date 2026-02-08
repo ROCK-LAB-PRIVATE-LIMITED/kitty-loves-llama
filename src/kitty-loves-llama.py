@@ -1,3 +1,18 @@
+# nuitka-project: --enable-plugin=pyside6
+# nuitka-project: --company-name="ROCK LAB PRIVATE LIMITED"
+# nuitka-project: --product-name="kitty-loves-llama"
+# nuitka-project: --file-version="1.0.0"
+# nuitka-project: --standalone
+# nuitka-project-if: {OS} == "Windows":
+#   nuitka-project: --windows-console-mode=disable
+#   nuitka-project: --windows-icon-from-ico=assets/kittycon.png
+#   nuitka-project: --mingw64
+# nuitka-project-if: {OS} == "Darwin":
+#   nuitka-project: --macos-create-app-bundle
+#   nuitka-project: --macos-app-icon=assets/kittycon.png
+# nuitka-project-if: {OS} == "Linux":
+#   pass
+
 import sys
 import os
 import shutil

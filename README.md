@@ -25,7 +25,7 @@ PySide6
 
 llama.cpp Binaries: You must have the llama-server (or llama-serve) executable for your platform. You can download them from the llama.cpp releases page.
 
-## Installation
+## 📦 Installation
 Clone the repository:
 
 code
@@ -39,7 +39,7 @@ code
 ```bash
 pip install PySide6
 ```
-## Usage
+## ⚡ Usage
 Run the application:
 
 code
@@ -48,13 +48,15 @@ python src/kitty-loves-llama.py
 ```
 Set the Binary: Click "Browse Bin" or type the path to your llama-server executable.
 
-Load a Model: Drag and drop a .gguf file into the top area.
+Load a Model: Drag and drop a .gguf file into the first drop area.
+
+Load multimodal/vision pipeline: Drag and drop the associated mmproj.gguf (or similar) into the second drop area. If none available, ignore this.
 
 Configure: Adjust your context size, GPU layers (set to 0 for CPU only), and port.
 
 Start: Hit Start Server. If "Display preview" is checked, the chat interface will open automatically.
 
-## 🛠️ Configuration Fields
+## ⚙️ Configuration Fields
 Parameter	Description
 Server Binary	Path to the llama-server executable.
 Context Size	Total tokens the model can process (-c).
