@@ -288,16 +288,28 @@ class LlamaWrapperApp(QMainWindow):
                 self.check_lan.setChecked(s.get("share_lan", False))
         except Exception as e:
             self.log_append(f"Failed to load settings: {e}")
-
+    
+    def is_port_in_use(self, port):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            return s.connect_ex(('127.0.0.1', port)) == 0
+    
     def start_server(self):
         if not self.model_path:
             self.log_append("ERROR: Please select or drop a GGUF model first.")
             return
 
+        # --- STRICT CLEANUP ---
+        self.stop_server()
+        port = self.spin_port.value()
+        
+        # Verify port is free to prevent collision crashes
+        if self.is_port_in_use(port):
+            self.log_append(f"ERROR: Port {port} is currently in use! A zombie process might be holding it, or another app is using it. Please change the port.")
+            return
+
         self.save_settings()
         
         # 1. Define Port and Host Logic
-        port = self.spin_port.value()
         if self.check_lan.isChecked():
             try:
                 # Detect local LAN IP
@@ -306,10 +318,9 @@ class LlamaWrapperApp(QMainWindow):
                 display_ip = s.getsockname()[0]
                 s.close()
             except Exception:
-                # SAFE FALLBACK: Never display 0.0.0.0, as it crashes the browser
                 display_ip = "127.0.0.1" 
             
-            host_arg = "0.0.0.0" # Tells llama-server to listen on LAN
+            host_arg = "0.0.0.0" 
             base_url = f"http://{display_ip}:{port}"
         else:
             host_arg = "127.0.0.1"
@@ -358,14 +369,13 @@ class LlamaWrapperApp(QMainWindow):
     def open_preview(self):
         url = self.url_display.text()
         if not url: 
-            return # Server not started yet
+            return 
         
         port_val = self.spin_port.value()
         
         if HAS_WEBENGINE:
             try:
-                # Safely initialize or re-show the window using the exact URL
-                if self.preview_window is None:
+                if not self.preview_window:
                     self.preview_window = QMainWindow()
                     self.preview_window.resize(1024, 768)
                     self.browser = QWebEngineView()
@@ -376,7 +386,7 @@ class LlamaWrapperApp(QMainWindow):
                 self.preview_window.show()
                 
             except RuntimeError:
-                # Fallback in case the underlying C++ window object was destroyed by the OS
+                # Triggers if the user previously 'X'd out of the window destroying the C++ object
                 self.preview_window = QMainWindow()
                 self.preview_window.resize(1024, 768)
                 self.browser = QWebEngineView()
@@ -390,12 +400,19 @@ class LlamaWrapperApp(QMainWindow):
             webbrowser.open(url)
 
     def stop_server(self):
-        if self.process.state() == QProcess.Running:
+        # 1. Aggressively terminate and ensure port is released
+        if self.process.state() != QProcess.NotRunning:
             self.process.terminate()
-            if not self.process.waitForFinished(3000):
+            if not self.process.waitForFinished(2000):
                 self.process.kill()
+                self.process.waitForFinished(1000) # Guarantee it's dead
+                
+        # 2. Safely reset WebEngine state without destroying the C++ object
         if self.preview_window:
             self.preview_window.close()
+            if hasattr(self, 'browser') and self.browser:
+                # Clear active connections to prevent collision crashes on next run
+                self.browser.setUrl(QUrl("about:blank"))
 
     def process_finished(self):
         self.log_append("<<< Server process stopped.")
