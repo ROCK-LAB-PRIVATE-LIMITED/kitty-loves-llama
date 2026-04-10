@@ -18,6 +18,7 @@ import os
 import shutil
 import json
 import webbrowser
+import socket
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
     QLabel, QLineEdit, QSpinBox, QDoubleSpinBox, QPushButton, 
@@ -173,6 +174,9 @@ class LlamaWrapperApp(QMainWindow):
         self.check_preview = QCheckBox("Display preview")
         self.check_preview.setChecked(False)
         
+        self.check_lan = QCheckBox("Share over LAN")
+        self.check_lan.setChecked(False)
+        
         self.btn_start = QPushButton("Start Server")
         self.btn_start.setFixedHeight(40)
         self.btn_start.setStyleSheet("background-color: #27ae60; color: white; font-weight: bold;")
@@ -183,8 +187,17 @@ class LlamaWrapperApp(QMainWindow):
         self.btn_stop.setEnabled(False)
         self.btn_stop.setStyleSheet("background-color: #c0392b; color: white; font-weight: bold;")
         self.btn_stop.clicked.connect(self.stop_server)
-
+        
+        url_layout = QHBoxLayout()
+        self.url_display = QLineEdit()
+        self.url_display.setReadOnly(True)
+        self.url_display.setPlaceholderText("Base URL will appear here...")
+        self.url_display.setStyleSheet("background: #ecf0f1; font-weight: bold; color: #2c3e50;")
+        url_layout.addWidget(QLabel("Base URL:"))
+        url_layout.addWidget(self.url_display)
+        
         ctrl_layout.addWidget(self.check_preview)
+        ctrl_layout.addWidget(self.check_lan)
         ctrl_layout.addStretch()
         ctrl_layout.addWidget(self.btn_start)
         ctrl_layout.addWidget(self.btn_stop)
@@ -235,7 +248,8 @@ class LlamaWrapperApp(QMainWindow):
             "port": self.spin_port.value(),
             "temp": self.spin_temp.value(),
             "extra": self.extra_args.text(),
-            "preview": self.check_preview.isChecked()
+            "preview": self.check_preview.isChecked(),
+            "share_lan": self.check_lan.isChecked()
         }
         try:
             with open(CONFIG_FILE, "w") as f:
@@ -259,6 +273,7 @@ class LlamaWrapperApp(QMainWindow):
                 self.spin_temp.setValue(s.get("temp", 0.7))
                 self.extra_args.setText(s.get("extra", ""))
                 self.check_preview.setChecked(s.get("preview", False))
+                self.check_lan.setChecked(s.get("share_lan", False))
         except Exception as e:
             self.log_append(f"Failed to load settings: {e}")
 
@@ -268,6 +283,25 @@ class LlamaWrapperApp(QMainWindow):
             return
 
         self.save_settings()
+        # Determine Host and URL
+        port = self.spin_port.value()
+        if self.check_lan.isChecked():
+            # Get LAN IP
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.connect(("8.8.8.8", 80))
+                host_ip = s.getsockname()[0]
+                s.close()
+            except Exception:
+                host_ip = "0.0.0.0"
+            host_arg = "0.0.0.0" # Bind to all local interfaces
+            base_url = f"http://{host_ip}:{port}"
+        else:
+            host_arg = "127.0.0.1"
+            base_url = f"http://127.0.0.1:{port}"
+
+        self.url_display.setText(base_url)
+        
         input_bin = self.bin_path_edit.text().strip()
         
         binary = None
@@ -284,6 +318,7 @@ class LlamaWrapperApp(QMainWindow):
 
         args = [
             "-m", self.model_path,
+            "--host", host_arg,
             "-c", str(self.spin_ctx.value()),
             "-ngl", str(self.spin_ngl.value()),
             "-t", str(self.spin_threads.value()),
@@ -309,8 +344,10 @@ class LlamaWrapperApp(QMainWindow):
             self.log_append(f"ERROR: Failed to start process (Error Code: {self.process.error()}).")
 
     def open_preview(self):
-        port = self.spin_port.value()
-        url = f"http://127.0.0.1:{port}"
+        url = self.url_display.text() # Use the generated URL
+        if not url: 
+            url = f"http://127.0.0.1:{self.spin_port.value()}"
+        
         if HAS_WEBENGINE:
             if not self.preview_window:
                 self.preview_window = QMainWindow()
