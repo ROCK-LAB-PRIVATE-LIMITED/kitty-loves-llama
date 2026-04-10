@@ -182,18 +182,32 @@ class LlamaWrapperApp(QMainWindow):
 
         main_layout.addWidget(config_group)
 
-        # --- Controls ---
+        # --- Controls (Left: Checks, Right: Buttons) ---
         ctrl_layout = QHBoxLayout()
         
+        # Left aligned
         self.check_preview = QCheckBox("Display preview")
-        self.check_preview.setChecked(False)
-        ctrl_layout.addWidget(self.check_preview)
-        
         self.check_lan = QCheckBox("Share over LAN")
-        self.check_lan.setChecked(False)
+        ctrl_layout.addWidget(self.check_preview)
         ctrl_layout.addWidget(self.check_lan)
         
-        ctrl_layout.addStretch()
+        ctrl_layout.addStretch() # Pushes everything after this to the right
+        
+        # Right aligned
+        self.btn_start = QPushButton("Start Server")
+        self.btn_start.clicked.connect(self.start_server)
+        
+        self.btn_stop = QPushButton("Stop Server")
+        self.btn_stop.clicked.connect(self.stop_server) # Logic updated below
+        
+        self.btn_webui = QPushButton("WebUI")
+        self.btn_webui.clicked.connect(self.open_preview)
+        
+        ctrl_layout.addWidget(self.btn_start)
+        ctrl_layout.addWidget(self.btn_stop)
+        ctrl_layout.addWidget(self.btn_webui)
+        
+        main_layout.addLayout(ctrl_layout)
         
         # Standard buttons
         self.btn_start = QPushButton("Start Server")
