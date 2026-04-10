@@ -208,21 +208,6 @@ class LlamaWrapperApp(QMainWindow):
         ctrl_layout.addWidget(self.btn_webui)
         
         main_layout.addLayout(ctrl_layout)
-        
-        # Standard buttons
-        self.btn_start = QPushButton("Start Server")
-        self.btn_start.clicked.connect(self.start_server)
-        ctrl_layout.addWidget(self.btn_start)
-
-        self.btn_stop = QPushButton("Stop Server")
-        self.btn_stop.clicked.connect(self.stop_server)
-        ctrl_layout.addWidget(self.btn_stop)
-
-        self.btn_webui = QPushButton("WebUI")
-        self.btn_webui.clicked.connect(self.open_preview)
-        ctrl_layout.addWidget(self.btn_webui)
-        
-        main_layout.addLayout(ctrl_layout)
         # --- URL Readout ---
         url_layout = QHBoxLayout()
         self.url_display = QLineEdit()
