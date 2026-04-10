@@ -188,16 +188,18 @@ class LlamaWrapperApp(QMainWindow):
         self.btn_stop.setStyleSheet("background-color: #c0392b; color: white; font-weight: bold;")
         self.btn_stop.clicked.connect(self.stop_server)
         
+        # --- URL Readout ---
         url_layout = QHBoxLayout()
         self.url_display = QLineEdit()
         self.url_display.setReadOnly(True)
         self.url_display.setPlaceholderText("Base URL will appear here...")
-        self.url_display.setStyleSheet("background: #ecf0f1; font-weight: bold; color: #2c3e50;")
         url_layout.addWidget(QLabel("Base URL:"))
         url_layout.addWidget(self.url_display)
-        
-        ctrl_layout.addWidget(self.check_preview)
-        ctrl_layout.addWidget(self.check_lan)
+        main_layout.addLayout(url_layout)
+
+        # Add the LAN checkbox to the existing ctrl_layout
+        self.check_lan = QCheckBox("Share over LAN")
+        ctrl_layout.insertWidget(2, self.check_lan) # Inserts it next to preview
         ctrl_layout.addStretch()
         ctrl_layout.addWidget(self.btn_start)
         ctrl_layout.addWidget(self.btn_stop)
@@ -283,46 +285,44 @@ class LlamaWrapperApp(QMainWindow):
             return
 
         self.save_settings()
-        # Determine Host and URL
+        
+        # 1. Define Port and Host Logic
         port = self.spin_port.value()
         if self.check_lan.isChecked():
-            # Get LAN IP
             try:
+                # Detect local LAN IP
                 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 s.connect(("8.8.8.8", 80))
                 host_ip = s.getsockname()[0]
                 s.close()
             except Exception:
                 host_ip = "0.0.0.0"
-            host_arg = "0.0.0.0" # Bind to all local interfaces
+            host_arg = "0.0.0.0" 
             base_url = f"http://{host_ip}:{port}"
         else:
             host_arg = "127.0.0.1"
             base_url = f"http://127.0.0.1:{port}"
 
         self.url_display.setText(base_url)
-        
+
+        # 2. Binary Detection
         input_bin = self.bin_path_edit.text().strip()
-        
-        binary = None
-        if os.path.exists(input_bin) and not os.path.isdir(input_bin):
-            binary = input_bin
-        else:
-            binary = shutil.which(input_bin)
-            if not binary and input_bin == "llama-server":
-                binary = shutil.which("llama-serve")
+        binary = os.path.abspath(input_bin) if os.path.exists(input_bin) else shutil.which(input_bin)
+        if not binary and input_bin == "llama-server":
+            binary = shutil.which("llama-serve")
 
         if not binary:
             self.log_append(f"ERROR: Could not find binary '{input_bin}'.")
             return
 
+        # 3. Build Arguments
         args = [
             "-m", self.model_path,
             "--host", host_arg,
+            "--port", str(port),
             "-c", str(self.spin_ctx.value()),
             "-ngl", str(self.spin_ngl.value()),
             "-t", str(self.spin_threads.value()),
-            "--port", str(self.spin_port.value()),
             "--temp", str(self.spin_temp.value())
         ]
 
@@ -344,9 +344,8 @@ class LlamaWrapperApp(QMainWindow):
             self.log_append(f"ERROR: Failed to start process (Error Code: {self.process.error()}).")
 
     def open_preview(self):
-        url = self.url_display.text() # Use the generated URL
-        if not url: 
-            url = f"http://127.0.0.1:{self.spin_port.value()}"
+        url = self.url_display.text()
+        if not url: return # Server not started yet
         
         if HAS_WEBENGINE:
             if not self.preview_window:
