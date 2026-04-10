@@ -360,8 +360,7 @@ class LlamaWrapperApp(QMainWindow):
         if HAS_WEBENGINE:
             if not self.preview_window:
                 self.preview_window = QMainWindow()
-                port_val = self.spin_port.value() # Fetch port here
-                self.preview_window.setWindowTitle(f"Llama Preview - {port_val}")
+                self.preview_window.setWindowTitle(f"Llama Preview - {port}")
                 self.preview_window.resize(1024, 768)
                 self.browser = QWebEngineView()
                 self.preview_window.setCentralWidget(self.browser)
