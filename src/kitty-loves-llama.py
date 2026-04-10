@@ -435,8 +435,9 @@ class LlamaWrapperApp(QMainWindow):
         url = self.url_display.text()
         if not url: 
             return 
-        
+        print(url)
         port_val = self.spin_port.value()
+        print(port_val)
         
         if HAS_WEBENGINE:
             try:
