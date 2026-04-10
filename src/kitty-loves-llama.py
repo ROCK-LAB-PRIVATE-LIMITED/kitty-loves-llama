@@ -19,6 +19,8 @@ import shutil
 import json
 import webbrowser
 import socket
+import subprocess # ADD THIS
+import time       # ADD THIS
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
     QLabel, QLineEdit, QSpinBox, QDoubleSpinBox, QPushButton, 
@@ -293,6 +295,51 @@ class LlamaWrapperApp(QMainWindow):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             return s.connect_ex(('127.0.0.1', port)) == 0
     
+    def free_port(self, port):
+        self.log_append(f"\n[DEBUG] Port {port} is blocked! Hunting down the zombie process...")
+        killed_any = False
+        
+        if sys.platform.startswith("win"):
+            try:
+                # Windows: Use netstat to find PID, then taskkill
+                cmd = ["netstat", "-ano"]
+                output = subprocess.check_output(cmd, text=True, stderr=subprocess.STDOUT)
+                for line in output.splitlines():
+                    if f":{port}" in line and "LISTENING" in line:
+                        parts = line.strip().split()
+                        if len(parts) >= 5:
+                            pid = parts[-1]
+                            self.log_append(f"[DEBUG] Found PID {pid} listening on port {port}.")
+                            self.log_append(f"[DEBUG] Executing: taskkill /F /PID {pid}")
+                            kill_out = subprocess.check_output(["taskkill", "/F", "/PID", pid], text=True, stderr=subprocess.STDOUT)
+                            self.log_append(f"[DEBUG] {kill_out.strip()}")
+                            killed_any = True
+            except Exception as e:
+                self.log_append(f"[DEBUG] Windows port hunt error: {e}")
+        else:
+            try:
+                # Unix (Mac/Linux): Use lsof to find PID, then SIGKILL
+                cmd =["lsof", "-t", "-i", f"tcp:{port}"]
+                self.log_append(f"[DEBUG] Executing: {' '.join(cmd)}")
+                output = subprocess.check_output(cmd, text=True, stderr=subprocess.DEVNULL)
+                pids = output.strip().split()
+                for pid_str in pids:
+                    if pid_str:
+                        pid = int(pid_str)
+                        self.log_append(f"[DEBUG] Found PID {pid} listening on port {port}. Sending SIGKILL (9)...")
+                        os.kill(pid, 9)
+                        killed_any = True
+            except subprocess.CalledProcessError:
+                self.log_append("[DEBUG] No process found via lsof. It might be owned by root.")
+            except Exception as e:
+                self.log_append(f"[DEBUG] Unix port hunt error: {e}")
+                
+        if killed_any:
+            self.log_append("[DEBUG] Process(es) executed. Waiting 1 second for OS to release the port...")
+            time.sleep(1) # Block briefly to ensure the OS network stack catches up
+        else:
+            self.log_append("[DEBUG] Could not find or kill any process. You may need administrator/sudo privileges.")
+    
     def start_server(self):
         if not self.model_path:
             self.log_append("ERROR: Please select or drop a GGUF model first.")
@@ -302,10 +349,14 @@ class LlamaWrapperApp(QMainWindow):
         self.stop_server()
         port = self.spin_port.value()
         
-        # Verify port is free to prevent collision crashes
+        # Verify port is free; if not, hunt down the blocker
         if self.is_port_in_use(port):
-            self.log_append(f"ERROR: Port {port} is currently in use! A zombie process might be holding it, or another app is using it. Please change the port.")
-            return
+            self.free_port(port)
+            if self.is_port_in_use(port):
+                self.log_append(f"ERROR: Port {port} is STILL in use! We could not kill the blocking process. Please change the port or check your permissions.")
+                return
+            else:
+                self.log_append(f"[DEBUG] Port {port} successfully freed by the port hunter.")
 
         self.save_settings()
         
