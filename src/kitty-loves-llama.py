@@ -171,36 +171,45 @@ class LlamaWrapperApp(QMainWindow):
 
         # --- Controls ---
         ctrl_layout = QHBoxLayout()
+        
         self.check_preview = QCheckBox("Display preview")
         self.check_preview.setChecked(False)
+        ctrl_layout.addWidget(self.check_preview)
         
         self.check_lan = QCheckBox("Share over LAN")
         self.check_lan.setChecked(False)
+        ctrl_layout.addWidget(self.check_lan)
+        
+        ctrl_layout.addStretch()
         
         self.btn_start = QPushButton("Start Server")
         self.btn_start.setFixedHeight(40)
         self.btn_start.setStyleSheet("background-color: #27ae60; color: white; font-weight: bold;")
         self.btn_start.clicked.connect(self.start_server)
+        ctrl_layout.addWidget(self.btn_start)
 
         self.btn_stop = QPushButton("Stop Server")
         self.btn_stop.setFixedHeight(40)
         self.btn_stop.setEnabled(False)
         self.btn_stop.setStyleSheet("background-color: #c0392b; color: white; font-weight: bold;")
         self.btn_stop.clicked.connect(self.stop_server)
+        ctrl_layout.addWidget(self.btn_stop)
         
+        main_layout.addLayout(ctrl_layout)
+
         # --- URL Readout ---
         url_layout = QHBoxLayout()
         self.url_display = QLineEdit()
         self.url_display.setReadOnly(True)
         self.url_display.setPlaceholderText("Base URL will appear here...")
+        self.url_display.setStyleSheet("background: #ecf0f1; font-weight: bold; color: #2c3e50;")
         url_layout.addWidget(QLabel("Base URL:"))
         url_layout.addWidget(self.url_display)
         main_layout.addLayout(url_layout)
 
         # Add the LAN checkbox to the existing ctrl_layout
         ctrl_layout.addWidget(self.check_preview)
-        self.check_lan = QCheckBox("Share over LAN")
-        ctrl_layout.insertWidget(2, self.check_lan) # Inserts it next to preview
+        ctrl_layout.addWidget(self.check_lan)
         ctrl_layout.addStretch()
         ctrl_layout.addWidget(self.btn_start)
         ctrl_layout.addWidget(self.btn_stop)
@@ -351,7 +360,8 @@ class LlamaWrapperApp(QMainWindow):
         if HAS_WEBENGINE:
             if not self.preview_window:
                 self.preview_window = QMainWindow()
-                self.preview_window.setWindowTitle(f"Llama Preview - {port}")
+                port_val = self.spin_port.value() # Fetch port here
+                self.preview_window.setWindowTitle(f"Llama Preview - {port_val}")
                 self.preview_window.resize(1024, 768)
                 self.browser = QWebEngineView()
                 self.preview_window.setCentralWidget(self.browser)
