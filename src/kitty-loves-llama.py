@@ -87,6 +87,7 @@ class LlamaWrapperApp(QMainWindow):
         self.load_settings()
         
         self.is_closing = False
+        self.waiting_for_server_ready = False
 
     def init_ui(self):
         central_widget = QWidget()
@@ -245,11 +246,21 @@ class LlamaWrapperApp(QMainWindow):
 
     def handle_stdout(self):
         data = self.process.readAllStandardOutput().data().decode(errors='replace')
-        self.log_append(data.strip())
+        if data:
+            self.log_append(data.strip())
+            # Check if server is ready
+            if self.waiting_for_server_ready and "starting the main loop" in data.lower():
+                self.waiting_for_server_ready = False
+                self.open_preview()
 
     def handle_stderr(self):
         data = self.process.readAllStandardError().data().decode(errors='replace')
-        self.log_append(data.strip())
+        if data:
+            self.log_append(data.strip())
+            # Check if server is ready
+            if self.waiting_for_server_ready and "starting the main loop" in data.lower():
+                self.waiting_for_server_ready = False
+                self.open_preview()
 
     def save_settings(self):
         settings = {
@@ -412,8 +423,11 @@ class LlamaWrapperApp(QMainWindow):
         if self.process.waitForStarted(3000):
             self.btn_start.setEnabled(False)
             self.btn_stop.setEnabled(True)
-            if self.check_preview.isChecked():
-                self.open_preview()
+            
+            # INSTEAD OF OPENING PREVIEW IMMEDIATELY, SET THE FLAG:
+            self.waiting_for_server_ready = self.check_preview.isChecked()
+            if self.waiting_for_server_ready:
+                self.log_append("[DEBUG] Waiting for model to load before opening preview...")
         else:
             self.log_append(f"ERROR: Failed to start process (Error Code: {self.process.error()}).")
 
