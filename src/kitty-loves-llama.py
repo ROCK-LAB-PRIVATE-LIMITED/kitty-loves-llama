@@ -198,6 +198,7 @@ class LlamaWrapperApp(QMainWindow):
         main_layout.addLayout(url_layout)
 
         # Add the LAN checkbox to the existing ctrl_layout
+        ctrl_layout.addWidget(self.check_preview)
         self.check_lan = QCheckBox("Share over LAN")
         ctrl_layout.insertWidget(2, self.check_lan) # Inserts it next to preview
         ctrl_layout.addStretch()
