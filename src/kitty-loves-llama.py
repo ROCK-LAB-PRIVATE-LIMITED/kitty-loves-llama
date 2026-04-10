@@ -354,22 +354,28 @@ class LlamaWrapperApp(QMainWindow):
             self.log_append(f"ERROR: Failed to start process (Error Code: {self.process.error()}).")
 
     def open_preview(self):
-        url = self.url_display.text()
-        if not url: return # Server not started yet
+        # Always use localhost for the local preview window. 
+        # QtWebEngine can crash if passed "0.0.0.0" or unresolvable network IP strings.
+        port_val = self.spin_port.value()
+        safe_url = f"http://127.0.0.1:{port_val}"
         
         if HAS_WEBENGINE:
-            if not self.preview_window:
-                self.preview_window = QMainWindow()
-                self.preview_window.setWindowTitle(f"Llama Preview - {port}")
-                self.preview_window.resize(1024, 768)
-                self.browser = QWebEngineView()
-                self.preview_window.setCentralWidget(self.browser)
-            
-            self.browser.setUrl(QUrl(url))
-            self.preview_window.show()
+            try:
+                if not self.preview_window:
+                    self.preview_window = QMainWindow()
+                    self.preview_window.setWindowTitle(f"Llama Preview - {port_val}")
+                    self.preview_window.resize(1024, 768)
+                    self.browser = QWebEngineView()
+                    self.preview_window.setCentralWidget(self.browser)
+                
+                self.browser.setUrl(QUrl(safe_url))
+                self.preview_window.show()
+            except Exception as e:
+                self.log_append(f"WebEngine error: {e}. Opening in system browser instead.")
+                webbrowser.open(safe_url)
         else:
             self.log_append("Warning: PySide6-WebEngine not found. Opening in system browser.")
-            webbrowser.open(url)
+            webbrowser.open(safe_url)
 
     def stop_server(self):
         if self.process.state() == QProcess.Running:
