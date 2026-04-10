@@ -19,14 +19,15 @@ import shutil
 import json
 import webbrowser
 import socket
-import subprocess
-import time
+import subprocess # ADD THIS
+import time       # ADD THIS
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
     QLabel, QLineEdit, QSpinBox, QDoubleSpinBox, QPushButton, 
-    QPlainTextEdit, QFileDialog, QGroupBox, QCheckBox, QGridLayout, QComboBox
+    QPlainTextEdit, QFileDialog, QGroupBox, QFormLayout, QCheckBox,
+    QGridLayout, QComboBox
 )
-from PySide6.QtCore import Qt, QProcess, Signal, QUrl
+from PySide6.QtCore import Qt, QProcess, Signal, QUrl, QTimer
 from PySide6.QtGui import QIcon
 
 try:
@@ -136,76 +137,49 @@ class LlamaWrapperApp(QMainWindow):
         
         main_layout.addWidget(drops_group)
 
-        # --- Configuration (Compact Grid + Full Width Extra Args) ---
+        # --- Configuration ---
         config_group = QGroupBox("Parameters")
-        config_vbox = QVBoxLayout(config_group)
-        
+        vbox_config = QVBoxLayout(config_group)
+
         grid = QGridLayout()
-        grid.setSpacing(10)
 
         # Row 0
-        self.spin_ctx = QSpinBox()
-        self.spin_ctx.setRange(512, 128000)
-        self.spin_ctx.setValue(4096)
-        grid.addWidget(QLabel("Context:"), 0, 0)
-        grid.addWidget(self.spin_ctx, 0, 1)
+        self.spin_ctx = QSpinBox(); self.spin_ctx.setRange(512, 128000); self.spin_ctx.setValue(4096)
+        grid.addWidget(QLabel("Ctx (-c):"), 0, 0); grid.addWidget(self.spin_ctx, 0, 1)
 
-        self.spin_ngl = QSpinBox()
-        self.spin_ngl.setRange(0, 200)
-        self.spin_ngl.setValue(32)
-        grid.addWidget(QLabel("GPU Layers:"), 0, 2)
-        grid.addWidget(self.spin_ngl, 0, 3)
+        self.spin_ngl = QSpinBox(); self.spin_ngl.setRange(0, 200); self.spin_ngl.setValue(32)
+        grid.addWidget(QLabel("GPU (-ngl):"), 0, 2); grid.addWidget(self.spin_ngl, 0, 3)
 
-        self.spin_threads = QSpinBox()
-        self.spin_threads.setRange(1, 64)
-        self.spin_threads.setValue(os.cpu_count() or 4)
-        grid.addWidget(QLabel("Threads:"), 0, 4)
-        grid.addWidget(self.spin_threads, 0, 5)
+        self.spin_threads = QSpinBox(); self.spin_threads.setRange(1, 64); self.spin_threads.setValue(os.cpu_count() or 4)
+        grid.addWidget(QLabel("Threads:"), 0, 4); grid.addWidget(self.spin_threads, 0, 5)
 
-        self.spin_port = QSpinBox()
-        self.spin_port.setRange(1024, 65535)
-        self.spin_port.setValue(8080)
-        grid.addWidget(QLabel("Port:"), 0, 6)
-        grid.addWidget(self.spin_port, 0, 7)
+        self.spin_port = QSpinBox(); self.spin_port.setRange(1024, 65535); self.spin_port.setValue(8080)
+        grid.addWidget(QLabel("Port:"), 0, 6); grid.addWidget(self.spin_port, 0, 7)
 
         # Row 1
-        self.spin_temp = QDoubleSpinBox()
-        self.spin_temp.setRange(0.0, 2.0)
-        self.spin_temp.setSingleStep(0.1)
-        self.spin_temp.setValue(0.7)
-        grid.addWidget(QLabel("Temp:"), 1, 0)
-        grid.addWidget(self.spin_temp, 1, 1)
+        self.spin_temp = QDoubleSpinBox(); self.spin_temp.setRange(0.0, 2.0); self.spin_temp.setSingleStep(0.1); self.spin_temp.setValue(0.7)
+        grid.addWidget(QLabel("Temp:"), 1, 0); grid.addWidget(self.spin_temp, 1, 1)
 
-        self.spin_top_k = QSpinBox()
-        self.spin_top_k.setRange(0, 1000)
-        self.spin_top_k.setValue(0)
-        self.spin_top_k.setToolTip("0 = default")
-        grid.addWidget(QLabel("Top K:"), 1, 2)
-        grid.addWidget(self.spin_top_k, 1, 3)
+        self.spin_top_p = QDoubleSpinBox(); self.spin_top_p.setRange(0.0, 1.0); self.spin_top_p.setSingleStep(0.05); self.spin_top_p.setValue(0.0)
+        grid.addWidget(QLabel("Top P:"), 1, 2); grid.addWidget(self.spin_top_p, 1, 3)
 
-        self.spin_top_p = QDoubleSpinBox()
-        self.spin_top_p.setRange(0.0, 1.0)
-        self.spin_top_p.setSingleStep(0.05)
-        self.spin_top_p.setValue(0.0)
-        self.spin_top_p.setToolTip("0.0 = default")
-        grid.addWidget(QLabel("Top P:"), 1, 4)
-        grid.addWidget(self.spin_top_p, 1, 5)
+        self.spin_top_k = QSpinBox(); self.spin_top_k.setRange(0, 100); self.spin_top_k.setValue(0)
+        grid.addWidget(QLabel("Top K:"), 1, 4); grid.addWidget(self.spin_top_k, 1, 5)
 
         self.combo_kv = QComboBox()
-        self.combo_kv.addItems(["default", "f16", "q8_0", "q4_0", "q4_1", "q5_0", "q5_1"])
-        grid.addWidget(QLabel("KV Cache:"), 1, 6)
-        grid.addWidget(self.combo_kv, 1, 7)
+        self.combo_kv.addItems(["Default", "f16", "q8_0", "q4_0"])
+        grid.addWidget(QLabel("KV Cache:"), 1, 6); grid.addWidget(self.combo_kv, 1, 7)
 
-        config_vbox.addLayout(grid)
+        vbox_config.addLayout(grid)
 
-        # Extra args spanning full width
+        # Extra Args (Full width)
         extra_layout = QHBoxLayout()
-        extra_layout.addWidget(QLabel("Extra Args:"))
         self.extra_args = QLineEdit()
-        self.extra_args.setPlaceholderText("--min-p 0.05 --typical 1.0 ...")
+        self.extra_args.setPlaceholderText("e.g. --repeat-penalty 1.1 ...")
+        extra_layout.addWidget(QLabel("Extra Args:"))
         extra_layout.addWidget(self.extra_args)
-        
-        config_vbox.addLayout(extra_layout)
+        vbox_config.addLayout(extra_layout)
+
         main_layout.addWidget(config_group)
 
         # --- Controls ---
@@ -221,12 +195,12 @@ class LlamaWrapperApp(QMainWindow):
         
         ctrl_layout.addStretch()
         
+        # Standard buttons
         self.btn_start = QPushButton("Start Server")
         self.btn_start.clicked.connect(self.start_server)
         ctrl_layout.addWidget(self.btn_start)
 
         self.btn_stop = QPushButton("Stop Server")
-        self.btn_stop.setEnabled(False)
         self.btn_stop.clicked.connect(self.stop_server)
         ctrl_layout.addWidget(self.btn_stop)
 
@@ -235,7 +209,6 @@ class LlamaWrapperApp(QMainWindow):
         ctrl_layout.addWidget(self.btn_webui)
         
         main_layout.addLayout(ctrl_layout)
-
         # --- URL Readout ---
         url_layout = QHBoxLayout()
         self.url_display = QLineEdit()
@@ -245,6 +218,14 @@ class LlamaWrapperApp(QMainWindow):
         url_layout.addWidget(QLabel("Base URL:"))
         url_layout.addWidget(self.url_display)
         main_layout.addLayout(url_layout)
+
+        # Add the LAN checkbox to the existing ctrl_layout
+        ctrl_layout.addWidget(self.check_preview)
+        ctrl_layout.addWidget(self.check_lan)
+        ctrl_layout.addStretch()
+        ctrl_layout.addWidget(self.btn_start)
+        ctrl_layout.addWidget(self.btn_stop)
+        main_layout.addLayout(ctrl_layout)
 
         # --- Logs ---
         self.log_view = QPlainTextEdit()
@@ -300,9 +281,9 @@ class LlamaWrapperApp(QMainWindow):
             "threads": self.spin_threads.value(),
             "port": self.spin_port.value(),
             "temp": self.spin_temp.value(),
-            "top_k": self.spin_top_k.value(),
             "top_p": self.spin_top_p.value(),
-            "kv_cache": self.combo_kv.currentText(),
+            "top_k": self.spin_top_k.value(),
+            "kv_cache": self.combo_kv.currentIndex(),
             "extra": self.extra_args.text(),
             "preview": self.check_preview.isChecked(),
             "share_lan": self.check_lan.isChecked()
@@ -327,9 +308,9 @@ class LlamaWrapperApp(QMainWindow):
                 self.spin_threads.setValue(s.get("threads", 4))
                 self.spin_port.setValue(s.get("port", 8080))
                 self.spin_temp.setValue(s.get("temp", 0.7))
-                self.spin_top_k.setValue(s.get("top_k", 0))
                 self.spin_top_p.setValue(s.get("top_p", 0.0))
-                self.combo_kv.setCurrentText(s.get("kv_cache", "default"))
+                self.spin_top_k.setValue(s.get("top_k", 0))
+                self.combo_kv.setCurrentIndex(s.get("kv_cache", 0))
                 self.extra_args.setText(s.get("extra", ""))
                 self.check_preview.setChecked(s.get("preview", False))
                 self.check_lan.setChecked(s.get("share_lan", False))
@@ -346,6 +327,7 @@ class LlamaWrapperApp(QMainWindow):
         
         if sys.platform.startswith("win"):
             try:
+                # Windows: Use netstat to find PID, then taskkill
                 cmd = ["netstat", "-ano"]
                 output = subprocess.check_output(cmd, text=True, stderr=subprocess.STDOUT)
                 for line in output.splitlines():
@@ -362,6 +344,7 @@ class LlamaWrapperApp(QMainWindow):
                 self.log_append(f"[DEBUG] Windows port hunt error: {e}")
         else:
             try:
+                # Unix (Mac/Linux): Use lsof to find PID, then SIGKILL
                 cmd =["lsof", "-t", "-i", f"tcp:{port}"]
                 self.log_append(f"[DEBUG] Executing: {' '.join(cmd)}")
                 output = subprocess.check_output(cmd, text=True, stderr=subprocess.DEVNULL)
@@ -379,7 +362,7 @@ class LlamaWrapperApp(QMainWindow):
                 
         if killed_any:
             self.log_append("[DEBUG] Process(es) executed. Waiting 1 second for OS to release the port...")
-            time.sleep(1) 
+            time.sleep(1) # Block briefly to ensure the OS network stack catches up
         else:
             self.log_append("[DEBUG] Could not find or kill any process. You may need administrator/sudo privileges.")
     
@@ -406,6 +389,7 @@ class LlamaWrapperApp(QMainWindow):
         # 1. Define Port and Host Logic
         if self.check_lan.isChecked():
             try:
+                # Detect local LAN IP
                 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 s.connect(("8.8.8.8", 80))
                 display_ip = s.getsockname()[0]
@@ -442,15 +426,15 @@ class LlamaWrapperApp(QMainWindow):
             "--temp", str(self.spin_temp.value())
         ]
 
-        # Append optional parameters only if they differ from the "0" / "default" state
-        if self.spin_top_k.value() != 0:
-            args.extend(["--top-k", str(self.spin_top_k.value())])
-            
-        if self.spin_top_p.value() != 0.0:
+        if self.spin_top_p.value() > 0:
             args.extend(["--top-p", str(self.spin_top_p.value())])
             
-        if self.combo_kv.currentText() != "default":
-            args.extend(["--cache-type", self.combo_kv.currentText()])
+        if self.spin_top_k.value() > 0:
+            args.extend(["--top-k", str(self.spin_top_k.value())])
+
+        if self.combo_kv.currentIndex() > 0:
+            kv_type = self.combo_kv.currentText()
+            args.extend(["--cache-type-k", kv_type, "--cache-type-v", kv_type])
 
         if self.mmproj_path:
             args.extend(["--mmproj", self.mmproj_path])
@@ -463,8 +447,9 @@ class LlamaWrapperApp(QMainWindow):
 
         if self.process.waitForStarted(3000):
             self.btn_start.setEnabled(False)
-            self.btn_stop.setEnabled(True)
+            # self.btn_stop.setEnabled(True) # We want always on
             
+            # INSTEAD OF OPENING PREVIEW IMMEDIATELY, SET THE FLAG:
             self.waiting_for_server_ready = self.check_preview.isChecked()
             if self.waiting_for_server_ready:
                 self.log_append("[DEBUG] Waiting for model to load before opening preview...")
@@ -472,11 +457,12 @@ class LlamaWrapperApp(QMainWindow):
             self.log_append(f"ERROR: Failed to start process (Error Code: {self.process.error()}).")
 
     def open_preview(self):
-        url = self.url_display.text().replace("/v1", "") 
+        url = self.url_display.text().replace("/v1", "") # Strip /v1 for the web GUI
         if not url: 
             return
-        
+        print(url)
         port_val = self.spin_port.value()
+        print(port_val)
         
         if HAS_WEBENGINE:
             try:
@@ -491,6 +477,7 @@ class LlamaWrapperApp(QMainWindow):
                 self.preview_window.show()
                 
             except RuntimeError:
+                # Triggers if the user previously 'X'd out of the window destroying the C++ object
                 self.preview_window = QMainWindow()
                 self.preview_window.resize(1024, 768)
                 self.browser = QWebEngineView()
@@ -504,12 +491,18 @@ class LlamaWrapperApp(QMainWindow):
             webbrowser.open(url)
 
     def stop_server(self):
+        # 1. Aggressively terminate and ensure port is released
         if self.process.state() != QProcess.NotRunning:
             self.process.terminate()
             if not self.process.waitForFinished(2000):
                 self.process.kill()
-                self.process.waitForFinished(1000) 
+                self.process.waitForFinished(1000) # Guarantee it's dead
+        else:
+            # If no managed process is running, manually hunt the port down
+            self.log_append("\n[DEBUG] No managed server running. Checking for external processes...")
+            self.free_port(self.spin_port.value())
                 
+        # 2. Safely reset WebEngine state without destroying the C++ object
         if self.preview_window:
             self.preview_window.close()
             if hasattr(self, 'browser') and self.browser:
@@ -518,20 +511,28 @@ class LlamaWrapperApp(QMainWindow):
     def process_finished(self):
         self.log_append("<<< Server process stopped.")
         self.btn_start.setEnabled(True)
-        self.btn_stop.setEnabled(False)
+        # Removed btn_stop disable so you can always hunt ports
         
         if self.is_closing:
             self.close()
 
     def closeEvent(self, event):
+        # 1. If the process is already dead, just save and exit
         if self.process.state() == QProcess.NotRunning:
             self.save_settings()
             event.accept()
             return
 
+        # 2. If the process is running, stop the exit and start killing the process
         self.log_append("Stopping server before exit...")
         self.is_closing = True
+        
+        # Use your existing stop_server logic
+        # (It uses terminate() then kill() after 3s)
         self.stop_server()
+        
+        # 3. Ignore this specific close attempt. 
+        # Once the process triggers 'finished', process_finished() will call self.close() again.
         event.ignore()
 
 if __name__ == "__main__":
