@@ -388,7 +388,7 @@ class LlamaWrapperApp(QMainWindow):
             host_arg = "127.0.0.1"
             base_url = f"http://127.0.0.1:{port}"
 
-        self.url_display.setText(base_url)
+        self.url_display.setText(base_url+"/v1")
 
         # 2. Binary Detection
         input_bin = self.bin_path_edit.text().strip()
@@ -432,9 +432,9 @@ class LlamaWrapperApp(QMainWindow):
             self.log_append(f"ERROR: Failed to start process (Error Code: {self.process.error()}).")
 
     def open_preview(self):
-        url = self.url_display.text()
+        url = self.url_display.text().replace("/v1", "") # Strip /v1 for the web GUI
         if not url: 
-            return 
+            return
         print(url)
         port_val = self.spin_port.value()
         print(port_val)
