@@ -182,29 +182,37 @@ class LlamaWrapperApp(QMainWindow):
 
         main_layout.addWidget(config_group)
 
-        # --- Controls (Left: Checks, Right: Buttons) ---
+        # --- Controls ---
         ctrl_layout = QHBoxLayout()
         
-        # Left aligned
+        # Left-aligned elements
         self.check_preview = QCheckBox("Display preview")
-        self.check_lan = QCheckBox("Share over LAN")
+        self.check_preview.setChecked(False)
         ctrl_layout.addWidget(self.check_preview)
+        
+        self.check_lan = QCheckBox("Share over LAN")
+        self.check_lan.setChecked(False)
         ctrl_layout.addWidget(self.check_lan)
         
-        ctrl_layout.addStretch() # Pushes everything after this to the right
+        # Stretch pushes the checkboxes to the left and the buttons to the right
+        ctrl_layout.addStretch()
         
-        # Right aligned
+        # Right-aligned standard buttons with identical sizes
+        button_min_width = 110
+        
         self.btn_start = QPushButton("Start Server")
+        self.btn_start.setMinimumWidth(button_min_width)
         self.btn_start.clicked.connect(self.start_server)
-        
-        self.btn_stop = QPushButton("Stop Server")
-        self.btn_stop.clicked.connect(self.stop_server) # Logic updated below
-        
-        self.btn_webui = QPushButton("WebUI")
-        self.btn_webui.clicked.connect(self.open_preview)
-        
         ctrl_layout.addWidget(self.btn_start)
+
+        self.btn_stop = QPushButton("Stop Server")
+        self.btn_stop.setMinimumWidth(button_min_width)
+        self.btn_stop.clicked.connect(self.stop_server)
         ctrl_layout.addWidget(self.btn_stop)
+
+        self.btn_webui = QPushButton("WebUI")
+        self.btn_webui.setMinimumWidth(button_min_width)
+        self.btn_webui.clicked.connect(self.open_preview)
         ctrl_layout.addWidget(self.btn_webui)
         
         main_layout.addLayout(ctrl_layout)
