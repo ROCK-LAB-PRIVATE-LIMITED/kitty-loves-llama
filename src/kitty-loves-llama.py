@@ -144,7 +144,7 @@ class LlamaWrapperApp(QMainWindow):
         grid = QGridLayout()
 
         # Row 0
-        self.spin_ctx = QSpinBox(); self.spin_ctx.setRange(512, 128000); self.spin_ctx.setValue(4096)
+        self.spin_ctx = QSpinBox(); self.spin_ctx.setRange(512, 1280000); self.spin_ctx.setValue(65536)
         grid.addWidget(QLabel("Ctx (-c):"), 0, 0); grid.addWidget(self.spin_ctx, 0, 1)
 
         self.spin_ngl = QSpinBox(); self.spin_ngl.setRange(0, 200); self.spin_ngl.setValue(32)
